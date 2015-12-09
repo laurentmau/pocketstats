@@ -1,6 +1,7 @@
 import pocket
 from pocket import Pocket
 import datetime
+from sqlalchemy import Column, Integer, String, Text
 
 def safe_unicode(obj, *args):
     """ return the unicode representation of obj """
@@ -22,6 +23,44 @@ def safe_str(obj):
 
 def unix_to_string(timestamp):
     return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+class Article(Base):
+    __tablename__ = 'article'
+
+    id = Column(Integer, primary_key=True)
+    item_id = Column(Integer)
+    resolved_id = Column(Integer)
+    given_url = Column(String)
+    resolved_url = Column(String)
+    given_title = Column(String)
+    resolved_title = Column(String)
+
+    # 0 or 1 - 1 If the item is favorited
+    favorite = Column(Integer)
+
+    # 0, 1, 2 - 1 if the item is archived - 2 if the item should be deleted
+    status = Column(Integer)
+
+    excerpt = Column(Text)
+
+    # 0 or 1 - 1 if the item is an article
+    is_article = Column(Integer)
+
+    # 0, 1, or 2 - 1 if the item has images in it - 2 if the item is an image
+    has_image = Column(Integer)
+
+    # 0, 1, or 2 - 1 if the item has videos in it - 2 if the item is a video
+    has_video = Column(Integer)
+
+    # How many words are in the article
+    word_count = Column(Integer)
+
+    # JSON objects
+    tags = Column(Text)
+    authors = Column(Text)
+    images = Column(Text)
+    videos = Column(Text)
 
 
 try:

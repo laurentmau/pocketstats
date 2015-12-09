@@ -1,3 +1,4 @@
+SQLAlchemy==1.0.9
 argparse==1.2.1
 pocket==0.3.6
 requests==2.8.1
