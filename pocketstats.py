@@ -1,7 +1,10 @@
 import pocket
 from pocket import Pocket
 import datetime
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
 def safe_unicode(obj, *args):
     """ return the unicode representation of obj """
@@ -29,6 +32,7 @@ class Article(Base):
     __tablename__ = 'article'
 
     id = Column(Integer, primary_key=True)
+    sort_id = Column(Integer)
     item_id = Column(Integer)
     resolved_id = Column(Integer)
     given_url = Column(String)
@@ -62,6 +66,17 @@ class Article(Base):
     images = Column(Text)
     videos = Column(Text)
 
+    time_updated = Column(DateTime)
+    time_favorited = Column(DateTime)
+    time_read = Column(DateTime)
+
+
+class Report(Base):
+    __tablename__ = 'report'
+
+    id = Column(Integer, primary_key=True)
+
+
 
 try:
     import settings
@@ -73,6 +88,10 @@ consumer_key = settings.consumer_key
 access_token = settings.access_token
 
 pocket_instance = pocket.Pocket(consumer_key, access_token)
+
+engine = create_engine('sqlite:///:memory:', echo=True)
+Session = sessionmaker(bind=engine)
+session = Session()
 
 #items = pocket_instance.get(state='unread')
 #print 'Number of items: ' + str(len(items[0]['list']))
@@ -95,6 +114,11 @@ for item_id in items[0]['list']:
     #print safe_unicode(item['given_title'])
     print safe_unicode(item['resolved_url'])
     #print safe_unicode(item['resolved_title'])
+    article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+    article.resolved_id = item['resolved_id']
+    session.add(article)
+
+session.commit()
 
 #items = pocket_instance.get(state='unread')
 #print items[0]['status']
