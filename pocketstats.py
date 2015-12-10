@@ -2,8 +2,10 @@ import pocket
 from pocket import Pocket
 import datetime
 import click
+import __main__ as main
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
@@ -73,57 +75,88 @@ class Article(Base):
 
 
 class Report(Base):
+    """
+    Changes since the last report; e.g., how many added, read, deleted, favourited
+    """
     __tablename__ = 'report'
 
     id = Column(Integer, primary_key=True)
 
 
+def get_pocket_instance():
+    """
+    Connect to Pocket API
+    """
+    try:
+        import settings
+    except ImportError:
+        print('Copy settings_example.py to settings.py and set the configuration to your own preferences')
+        sys.exit(1)
 
-try:
-    import settings
-except ImportError:
-    print('Copy settings_example.py to settings.py and set the configuration to your own preferences')
-    sys.exit(1)
+    consumer_key = settings.consumer_key
+    access_token = settings.access_token
 
-consumer_key = settings.consumer_key
-access_token = settings.access_token
+    pocket_instance = pocket.Pocket(consumer_key, access_token)
+    return pocket_instance
 
-pocket_instance = pocket.Pocket(consumer_key, access_token)
 
-engine = create_engine('sqlite:///:memory:', echo=True)
-Session = sessionmaker(bind=engine)
-session = Session()
+def get_db_connection():
+    """
+    Create a SQLAlchemy session
+    """
+    engine = create_engine('sqlite:///:memory:', echo=True)
+    Session = sessionmaker(bind=engine)
+    return Session()
 
-#items = pocket_instance.get(state='unread')
-#print 'Number of items: ' + str(len(items[0]['list']))
-#items = pocket_instance.get(state='archive')
-#print 'Number of items: ' + str(len(items[0]['list']))
-#sys.exit()
 
-#items = pocket_instance.get()
-items = pocket_instance.get(count=10)
-#print items[0]['status']
-print 'Number of items: ' + str(len(items[0]['list']))
+## Main program
+@click.group()
+def cli():
+    """
+    Pocket stats
+    """
+    pass
 
-for item_id in items[0]['list']:
-    #print item_id
-    item = items[0]['list'][item_id]
-    print item
-    #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
-    print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
-    #datetime.datetime.fromtimestamp(int(item['time_updated'])).strftime('%Y-%m-%d %H:%M:%S')
-    #print safe_unicode(item['given_title'])
-    print safe_unicode(item['resolved_url'])
-    #print safe_unicode(item['resolved_title'])
-    article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
-    article.resolved_id = item['resolved_id']
-    session.add(article)
 
-session.commit()
+@cli.command()
+def updatestats():
+    """
+    Get the changes since last time from the Pocket API
+    """
+    session = get_db_connection()
 
-#items = pocket_instance.get(state='unread')
-#print items[0]['status']
-#print len(items[0]['list'])
+    #items = pocket_instance.get(state='unread')
+    #print 'Number of items: ' + str(len(items[0]['list']))
+    #items = pocket_instance.get(state='archive')
+    #print 'Number of items: ' + str(len(items[0]['list']))
+    #sys.exit()
+
+    #items = pocket_instance.get()
+    pocket_instance = get_pocket_instance()
+    items = pocket_instance.get(count=10)
+    #print items[0]['status']
+    print 'Number of items: ' + str(len(items[0]['list']))
+
+    for item_id in items[0]['list']:
+        #print item_id
+        item = items[0]['list'][item_id]
+        print item
+        #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
+        print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
+        #datetime.datetime.fromtimestamp(int(item['time_updated'])).strftime('%Y-%m-%d %H:%M:%S')
+        #print safe_unicode(item['given_title'])
+        print safe_unicode(item['resolved_url'])
+        #print safe_unicode(item['resolved_title'])
+        article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+        article.resolved_id = item['resolved_id']
+        session.add(article)
+
+    session.commit()
+
+    #items = pocket_instance.get(state='unread')
+    #print items[0]['status']
+    #print len(items[0]['list'])
+
 
 @cli.command()
 def gettoken():
