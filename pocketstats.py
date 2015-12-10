@@ -159,18 +159,21 @@ def updatestats():
 
 
 @cli.command()
-def gettoken():
+@click.option('--consumer_key', prompt='Your Consumer Key', help='Get it at https://getpocket.com/developer/')
+def gettoken(consumer_key):
     """
     Get access token
     """
-    logger = get_logger()
-    if settings.notification_type == 'pb':
-        p, sendto_device = get_pushbullet_config(logger)
-        if not sendto_device:
-            sys.exit(1)
+    # URL to redirect user to, to authorize your app
+    redirect_uri = 'https://github.com/aquatix/pocketstats'
+    request_token = Pocket.get_request_token(consumer_key=consumer_key, redirect_uri=redirect_uri)
+    auth_url = Pocket.get_auth_url(code=request_token, redirect_uri=redirect_uri)
+    print "Open the uri printed below in your browser and allow the application"
+    print "Note the key you get in response, as that is your access_token"
+    print ""
+    print auth_url
+    print ""
 
-        local_version = get_local_version()
-        p.push_note('ns-notifier test', 'Test message from ns-notifier ' + local_version + '. Godspeed!', sendto_device)
 
 if not hasattr(main, '__file__'):
     """
