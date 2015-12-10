@@ -1,6 +1,7 @@
 import pocket
 from pocket import Pocket
 import datetime
+import click
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -123,3 +124,29 @@ session.commit()
 #items = pocket_instance.get(state='unread')
 #print items[0]['status']
 #print len(items[0]['list'])
+
+@cli.command()
+def gettoken():
+    """
+    Get access token
+    """
+    logger = get_logger()
+    if settings.notification_type == 'pb':
+        p, sendto_device = get_pushbullet_config(logger)
+        if not sendto_device:
+            sys.exit(1)
+
+        local_version = get_local_version()
+        p.push_note('ns-notifier test', 'Test message from ns-notifier ' + local_version + '. Godspeed!', sendto_device)
+
+if not hasattr(main, '__file__'):
+    """
+    Running in interactive mode in the Python shell
+    """
+    print("Pocket stats running interactively in Python shell")
+
+elif __name__ == '__main__':
+    """
+    Pocket stats is ran standalone, rock and roll
+    """
+    cli()
