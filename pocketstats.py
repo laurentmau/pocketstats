@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
+
 def safe_unicode(obj, *args):
     """ return the unicode representation of obj """
     try:
@@ -32,6 +33,9 @@ def unix_to_string(timestamp):
 
 
 class Article(Base):
+    """
+    An item in the Pocket archive; can also be an Image or Video
+    """
     __tablename__ = 'article'
 
     id = Column(Integer, primary_key=True)
@@ -81,6 +85,15 @@ class Report(Base):
     __tablename__ = 'report'
 
     id = Column(Integer, primary_key=True)
+    # Local DateTime of request
+    time_updated = Column(DateTime)
+    # DateTime stamp that Pocket reported for this request
+    time_since = Column(DateTime)
+    # Stats
+    nr_added = Column(Integer)
+    nr_read = Column(Integer)
+    nr_deleted = Column(Integer)
+    nr_favourited = Column(Integer)
 
 
 def get_pocket_instance():
