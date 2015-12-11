@@ -126,13 +126,15 @@ def get_db_connection(get_engine=False):
         return Session()
 
 
-def create_db():
+def _create_tables():
     session, engine = get_db_connection(get_engine=True)
 
     inspector = Inspector.from_engine(engine)
-    print table_name in inspector.get_table_names()
-    # TODO: If Article and Report don't exist yet, create:
-    # Base.metadata.create_all(engine)
+    #for table_name in inspector.get_table_names():
+    #    print table_name
+    if (engine.dialect.has_table(engine.connect(), "Article") == False) or (engine.dialect.has_table(engine.connect(), "Report") == False):
+        # TODO: If Article and Report don't exist yet, create:
+        Base.metadata.create_all(engine)
 
 
 def get_last_update():
@@ -199,6 +201,14 @@ def updatestats():
     #items = pocket_instance.get(state='unread')
     #print items[0]['status']
     #print len(items[0]['list'])
+
+
+@cli.command()
+def createdb():
+    """
+    Create the database
+    """
+    _create_tables()
 
 
 @cli.command()
