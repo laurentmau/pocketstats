@@ -6,6 +6,7 @@ import __main__ as main
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
@@ -113,13 +114,36 @@ def get_pocket_instance():
     return pocket_instance
 
 
-def get_db_connection():
+def get_db_connection(get_engine=False):
     """
     Create a SQLAlchemy session
     """
     engine = create_engine('sqlite:///:memory:', echo=True)
     Session = sessionmaker(bind=engine)
-    return Session()
+    if get_engine:
+        return Session(),engine
+    else:
+        return Session()
+
+
+def create_db():
+    session, engine = get_db_connection(get_engine=True)
+
+    inspector = Inspector.from_engine(engine)
+    print table_name in inspector.get_table_names()
+    # TODO: If Article and Report don't exist yet, create:
+    # Base.metadata.create_all(engine)
+
+
+def get_last_update():
+    """
+    Return the timestamp of the last update from Pocket.
+    This will be used to filter the request of updates.
+    """
+    session = get_db_connection()
+    for time_since, report_id in session.query(Report.time_since, Report.id):
+        print time_since, report_id
+    return None
 
 
 ## Main program
@@ -144,6 +168,8 @@ def updatestats():
     #print 'Number of items: ' + str(len(items[0]['list']))
     #sys.exit()
 
+    last_time = get_last_update()
+
     #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
     items = pocket_instance.get(count=10)
@@ -164,6 +190,10 @@ def updatestats():
         article.resolved_id = item['resolved_id']
         session.add(article)
 
+    # Check what's pending
+    print session.new
+
+    # Save to DB
     session.commit()
 
     #items = pocket_instance.get(state='unread')
