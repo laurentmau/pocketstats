@@ -100,6 +100,11 @@ class Article(Base):
     images = Column(Text)
     videos = Column(Text)
 
+    # First import of this item
+    time_firstseen = Column(DateTime)
+    # time_updated at time of the first import
+    time_firstseen_updated = Column(DateTime)
+
     time_updated = Column(DateTime)
     time_favorited = Column(DateTime)
     time_read = Column(DateTime)
@@ -276,6 +281,9 @@ def updatestats():
             article.images = json.dumps(item['images'])
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
+        if not existing_item:
+            article.time_firstseen = now
+            article.time_firstseen_updated = unix_to_python(item['time_updated'])
         article.time_updated = unix_to_python(item['time_updated'])
         article.time_favorited = unix_to_python(item['time_favorited'])
         article.time_read = unix_to_python(item['time_read'])
