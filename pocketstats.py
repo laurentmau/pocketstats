@@ -1,8 +1,9 @@
+import datetime
+import logging
+import __main__ as main
 import pocket
 from pocket import Pocket
-import datetime
 import click
-import __main__ as main
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -31,6 +32,24 @@ def safe_str(obj):
 
 def unix_to_string(timestamp):
     return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def get_logger():
+    """
+    Create logging handler
+    """
+    ## Create logger
+    logger = logging.getLogger('pocketstats')
+    logger.setLevel(logging.DEBUG)
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler('pocketstats.log')
+    fh.setLevel(logging.DEBUG)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    return logger
 
 
 class Article(Base):
@@ -164,6 +183,7 @@ def updatestats():
     """
     Get the changes since last time from the Pocket API
     """
+    logger = get_logger()
     session = get_db_connection()
 
     #items = pocket_instance.get(state='unread')
@@ -179,13 +199,16 @@ def updatestats():
     items = pocket_instance.get(count=10)
     #print items[0]['status']
     print 'Number of items: ' + str(len(items[0]['list']))
+    logger.debug('Number of items: ' + str(len(items[0]['list'])))
 
     for item_id in items[0]['list']:
         #print item_id
         item = items[0]['list'][item_id]
         print item
+        logger.debug(item)
         #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
         print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
+        logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
         #datetime.datetime.fromtimestamp(int(item['time_updated'])).strftime('%Y-%m-%d %H:%M:%S')
         #print safe_unicode(item['given_title'])
         print safe_unicode(item['resolved_url'])
@@ -214,6 +237,8 @@ def updatestats():
 
     # Check what's pending
     print session.new
+    logger.debug('About to commit to DB:')
+    logger.debug(session.new)
 
     # Save to DB
     session.commit()
