@@ -1,4 +1,5 @@
 import datetime
+from time import mktime
 import json
 import logging
 import __main__ as main
@@ -33,6 +34,10 @@ def safe_str(obj):
 
 def unix_to_string(timestamp):
     return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def unix_to_python(timestamp):
+    return datetime.datetime.utcfromtimestamp(float(timestamp))
 
 
 def get_logger():
@@ -111,10 +116,15 @@ class Report(Base):
     # DateTime stamp that Pocket reported for this request
     time_since = Column(DateTime)
     # Stats
+    total_response = Column(Integer)
     nr_added = Column(Integer)
     nr_read = Column(Integer)
     nr_deleted = Column(Integer)
     nr_favourited = Column(Integer)
+    # Response metadata
+    status = Column(Integer)
+    complete = Column(Integer)
+    error = Column(Text)
 
 
 def get_pocket_instance():
@@ -165,9 +175,12 @@ def get_last_update():
     This will be used to filter the request of updates.
     """
     session = get_db_connection()
-    for time_since, report_id in session.query(Report.time_since, Report.id):
-        print time_since, report_id
-    return None
+    #for time_since, report_id in session.query(Report.time_since, Report.id):
+    #    print time_since, report_id
+    time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
+    print time_since, report_id
+    #return None
+    return mktime(time_since.timetuple())
 
 
 ## Main program
@@ -194,13 +207,29 @@ def updatestats():
     #sys.exit()
 
     last_time = get_last_update()
+    print last_time
 
     #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
-    items = pocket_instance.get(count=20, state='all', detailType='complete')
+    if last_time:
+        items = pocket_instance.get(since=last_time, state='all', detailType='complete')
+    else:
+        items = pocket_instance.get(count=20, state='all', detailType='complete')
     #print items[0]['status']
     print 'Number of items: ' + str(len(items[0]['list']))
     logger.debug('Number of items: ' + str(len(items[0]['list'])))
+
+    now = datetime.datetime.now()
+    report = Report(time_updated=now)
+    nr_added = 0
+    nr_read = 0
+    nr_deleted = 0
+    nr_favourited = 0
+    report.time_since = unix_to_python(items[0]['since'])
+    report.status = items[0]['status']
+    report.complete = items[0]['complete']
+    report.error = items[0]['error']
+    report.total_response = len(items[0]['list'])
 
     for item_id in items[0]['list']:
         #print item_id
@@ -223,20 +252,22 @@ def updatestats():
         article.has_image = item['has_image']
         article.has_video = item['has_video']
         article.word_count = item['word_count']
-        article.tags = json.dumps(item['tags'])
+        if 'tags' in item:
+            article.tags = json.dumps(item['tags'])
         if 'authors' in item:
             article.authors = json.dumps(item['authors'])
         if 'images' in item:
             article.images = json.dumps(item['images'])
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
-        article.time_updated = datetime.datetime.fromtimestamp(float(item['time_updated']))
-        article.time_favorited = datetime.datetime.fromtimestamp(float(item['time_favorited']))
-        article.time_read = datetime.datetime.fromtimestamp(float(item['time_read']))
+        article.time_updated = unix_to_python(item['time_updated'])
+        article.time_favorited = unix_to_python(item['time_favorited'])
+        article.time_read = unix_to_python(item['time_read'])
         session.add(article)
 
+    session.add(report)
+
     # Check what's pending
-    print session.new
     logger.debug('About to commit to DB:')
     logger.debug(session.new)
 
