@@ -196,7 +196,7 @@ def updatestats():
 
     #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
-    items = pocket_instance.get(count=10)
+    items = pocket_instance.get(count=20, state='all')
     #print items[0]['status']
     print 'Number of items: ' + str(len(items[0]['list']))
     logger.debug('Number of items: ' + str(len(items[0]['list'])))
