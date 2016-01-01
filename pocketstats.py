@@ -118,7 +118,9 @@ def get_db_connection(get_engine=False):
     """
     Create a SQLAlchemy session
     """
-    engine = create_engine('sqlite:///:memory:', echo=True)
+    #engine = create_engine('sqlite:///:memory:', echo=True)
+    # Relative path:
+    engine = create_engine('sqlite:///pocketstats.db')
     Session = sessionmaker(bind=engine)
     if get_engine:
         return Session(),engine
@@ -190,6 +192,24 @@ def updatestats():
         #print safe_unicode(item['resolved_title'])
         article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
         article.resolved_id = item['resolved_id']
+        article.given_url = item['given_url']
+        article.resolved_url = item['resolved_url']
+        article.given_title = item['given_title']
+        article.resolved_title = item['resolved_title']
+        article.favorite = item['favorite']
+        article.status = item['status']
+        article.excerpt = item['excerpt']
+        article.is_article = item['is_article']
+        article.has_image = item['has_image']
+        article.has_video = item['has_video']
+        article.word_count = item['word_count']
+        #article.tags = item['tags']
+        #article.authors = item['authors']
+        #article.images = item['images']
+        #article.videos = item['videos']
+        article.time_updated = datetime.datetime.fromtimestamp(float(item['time_updated']))
+        article.time_favorited = datetime.datetime.fromtimestamp(float(item['time_favorited']))
+        article.time_read = datetime.datetime.fromtimestamp(float(item['time_read']))
         session.add(article)
 
     # Check what's pending
