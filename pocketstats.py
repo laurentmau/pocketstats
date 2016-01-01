@@ -2,6 +2,7 @@ import datetime
 from time import mktime
 import json
 import logging
+import sys
 import __main__ as main
 import pocket
 from pocket import Pocket
@@ -177,10 +178,23 @@ def get_last_update():
     session = get_db_connection()
     #for time_since, report_id in session.query(Report.time_since, Report.id):
     #    print time_since, report_id
-    time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
-    print time_since, report_id
-    #return None
-    return mktime(time_since.timetuple())
+    try:
+        time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
+        print time_since, report_id
+        return mktime(time_since.timetuple())
+    except IndexError:
+        return None
+
+
+def get_existing_item(item_id):
+    """
+    Returns the item with item_id if already in DB, otherwise None
+    """
+    session = get_db_connection()
+    try:
+        return session.query(Article).filter(Article.item_id == item_id)
+    except IndexError:
+        return None
 
 
 ## Main program
@@ -236,6 +250,8 @@ def updatestats():
         item = items[0]['list'][item_id]
         print item
         logger.debug(item)
+        existing_item = get_existing_item(item_id)
+        print(existing_item)
         #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
         #print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
         logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
