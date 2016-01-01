@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import __main__ as main
 import pocket
@@ -196,7 +197,7 @@ def updatestats():
 
     #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
-    items = pocket_instance.get(count=20, state='all')
+    items = pocket_instance.get(count=20, state='all', detailType='complete')
     #print items[0]['status']
     print 'Number of items: ' + str(len(items[0]['list']))
     logger.debug('Number of items: ' + str(len(items[0]['list'])))
@@ -226,10 +227,13 @@ def updatestats():
         article.has_image = item['has_image']
         article.has_video = item['has_video']
         article.word_count = item['word_count']
-        #article.tags = item['tags']
-        #article.authors = item['authors']
-        #article.images = item['images']
-        #article.videos = item['videos']
+        article.tags = json.dumps(item['tags'])
+        if 'authors' in item:
+            article.authors = json.dumps(item['authors'])
+        if 'images' in item:
+            article.images = json.dumps(item['images'])
+        if 'videos' in item:
+            article.videos = json.dumps(item['videos'])
         article.time_updated = datetime.datetime.fromtimestamp(float(item['time_updated']))
         article.time_favorited = datetime.datetime.fromtimestamp(float(item['time_favorited']))
         article.time_read = datetime.datetime.fromtimestamp(float(item['time_read']))
