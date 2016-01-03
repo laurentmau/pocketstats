@@ -1,6 +1,6 @@
-SQLAlchemy==1.0.9
+SQLAlchemy==1.0.11
 argparse==1.2.1
 click==6.2
 pocket==0.3.6
-requests==2.8.1
+requests==2.9.1
 wsgiref==0.1.2
