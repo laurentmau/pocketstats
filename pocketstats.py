@@ -221,8 +221,6 @@ def get_last_update():
     This will be used to filter the request of updates.
     """
     session = get_db_connection()
-    #for time_since, report_id in session.query(Report.time_since, Report.id):
-    #    print time_since, report_id
     try:
         time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
         return mktime(time_since.timetuple())
@@ -258,22 +256,14 @@ def updatestats():
     logger = get_logger()
     session = get_db_connection()
 
-    #items = pocket_instance.get(state='unread')
-    #print 'Number of items: ' + str(len(items[0]['list']))
-    #items = pocket_instance.get(state='archive')
-    #print 'Number of items: ' + str(len(items[0]['list']))
-    #sys.exit()
-
     last_time = get_last_update()
     debug_print(last_time)
 
-    #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
     if last_time:
         items = pocket_instance.get(since=last_time, state='all', detailType='complete')
     else:
         items = pocket_instance.get(count=20, state='all', detailType='complete')
-    #print items[0]['status']
     debug_print('Number of items in reponse: ' + str(len(items[0]['list'])))
     logger.debug('Number of items in response: ' + str(len(items[0]['list'])))
 
@@ -290,14 +280,8 @@ def updatestats():
     report.total_response = len(items[0]['list'])
 
     for item_id in items[0]['list']:
-        #print item_id
         item = items[0]['list'][item_id]
-        #print item
-        #logger.debug(item)
         existing_item = get_existing_item(item_id)
-        #print(existing_item)
-        #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
-        #print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
         logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
         if not existing_item:
             article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
@@ -368,10 +352,6 @@ def updatestats():
 
     debug_print(report.pretty_print())
     logger.info(report)
-
-    #items = pocket_instance.get(state='unread')
-    #print items[0]['status']
-    #print len(items[0]['list'])
 
 
 @cli.command()
