@@ -41,6 +41,10 @@ def unix_to_python(timestamp):
     return datetime.datetime.utcfromtimestamp(float(timestamp))
 
 
+def datetime_to_string(timestamp):
+    return timestamp.strftime('%Y-%m-%d %H:%M:%S')
+
+
 def get_logger():
     """
     Create logging handler
@@ -131,6 +135,17 @@ class Report(Base):
     status = Column(Integer)
     complete = Column(Integer)
     error = Column(Text)
+
+    def pretty_print(self):
+        """
+        Return a pretty overview of the report, usable for printing as import result
+        """
+        data = [['update at', datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
+        result = ''
+        col_width = max(len(word) for row in data for word in row) + 2  # padding
+        for row in data:
+            result += "".join(word.ljust(col_width) for word in row) + "\n"
+        return result
 
 
 def get_pocket_instance():
@@ -279,8 +294,14 @@ def updatestats():
         print type(article.status)
         if article.status == '0' and not existing_item:
             nr_added += 1
+        elif article.status == '1' and not existing_item:
+            nr_added += 1
+            nr_read += 1
         elif article.status == '1':
             nr_read += 1
+        elif article.status == '2' and not existing_item:
+            nr_added += 1
+            nr_deleted += 1
         elif article.status == '2':
             nr_deleted += 1
 
@@ -318,10 +339,7 @@ def updatestats():
     # Save to DB
     session.commit()
 
-    print nr_added
-    print nr_read
-    print nr_favourited
-    print nr_deleted
+    print report.pretty_print()
 
     #items = pocket_instance.get(state='unread')
     #print items[0]['status']
