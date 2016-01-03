@@ -149,6 +149,18 @@ class Report(Base):
         return result
 
 
+    def __str__(self):
+        return u'Update at ' + datetime_to_string(self.time_updated) + '; total in response: ' + str(self.total_response) + ', nr_added: ' + str(self.nr_added) + ', nr_read: ' + str(self.nr_read) + ', nr_favourited: ' + str(self.nr_favourited) + ', nr_deleted: ' + str(self.nr_deleted)
+
+
+    def __unicode__(self):
+        return self.__str__()
+
+
+    def __repr__(self):
+        return self.__str__()
+
+
 def get_pocket_instance():
     """
     Connect to Pocket API
@@ -251,8 +263,8 @@ def updatestats():
     else:
         items = pocket_instance.get(count=20, state='all', detailType='complete')
     #print items[0]['status']
-    print 'Number of items: ' + str(len(items[0]['list']))
-    logger.debug('Number of items: ' + str(len(items[0]['list'])))
+    print 'Number of items in reponse: ' + str(len(items[0]['list']))
+    logger.debug('Number of items in response: ' + str(len(items[0]['list'])))
 
     now = datetime.datetime.now()
     report = Report(time_updated=now)
@@ -269,17 +281,19 @@ def updatestats():
     for item_id in items[0]['list']:
         #print item_id
         item = items[0]['list'][item_id]
-        print item
-        logger.debug(item)
+        #print item
+        #logger.debug(item)
         existing_item = get_existing_item(item_id)
-        print(existing_item)
+        #print(existing_item)
         #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
         #print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
         logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
         if not existing_item:
             article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+            logger.debug('Existing item NOT found for ' + item_id)
         else:
             article = existing_item
+            logger.debug('Existing item found for ' + item_id)
         article.resolved_id = item['resolved_id']
         article.given_url = item['given_url']
         article.resolved_url = item['resolved_url']
@@ -291,8 +305,6 @@ def updatestats():
             previous_status = existing_item.status
         # 0, 1, 2 - 1 if the item is archived - 2 if the item should be deleted
         article.status = item['status']
-        print "article status " + str(article.status)
-        print type(article.status)
         if article.status == '0' and not existing_item:
             nr_added += 1
         elif article.status == '1' and not existing_item:
@@ -319,14 +331,16 @@ def updatestats():
             article.images = json.dumps(item['images'])
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
+        article.time_updated = unix_to_python(item['time_updated'])
+        article.time_favorited = unix_to_python(item['time_favorited'])
+        article.time_read = unix_to_python(item['time_read'])
         if not existing_item:
             article.firstseen_status = item['status']
             article.firstseen_time = now
             article.firstseen_time_updated = unix_to_python(item['time_updated'])
-        article.time_updated = unix_to_python(item['time_updated'])
-        article.time_favorited = unix_to_python(item['time_favorited'])
-        article.time_read = unix_to_python(item['time_read'])
-        session.add(article)
+
+            # If item didn't exist yet, add it (otherwise it's updated automagically)
+            session.add(article)
 
     report.nr_added = nr_added
     report.nr_read = nr_read
@@ -335,13 +349,14 @@ def updatestats():
     session.add(report)
 
     # Check what's pending
-    logger.debug('About to commit to DB:')
-    logger.debug(session.new)
+    #logger.debug('About to commit to DB:')
+    #logger.debug(session.new)
 
     # Save to DB
     session.commit()
 
     print report.pretty_print()
+    logger.info(report)
 
     #items = pocket_instance.get(state='unread')
     #print items[0]['status']
