@@ -14,6 +14,9 @@ from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
+# Can be overridden in settings.py
+DEBUG = False
+
 
 def safe_unicode(obj, *args):
     """ return the unicode representation of obj """
@@ -31,6 +34,11 @@ def safe_str(obj):
     except UnicodeEncodeError:
         # obj is unicode
         return unicode(obj).encode('unicode_escape')
+
+
+def debug_print(string):
+    if DEBUG:
+        print string
 
 
 def unix_to_string(timestamp):
@@ -173,6 +181,10 @@ def get_pocket_instance():
 
     consumer_key = settings.consumer_key
     access_token = settings.access_token
+    try:
+        DEBUG = settings.DEBUG
+    except AttributeError:
+        pass
 
     pocket_instance = pocket.Pocket(consumer_key, access_token)
     return pocket_instance
@@ -213,7 +225,6 @@ def get_last_update():
     #    print time_since, report_id
     try:
         time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
-        print time_since, report_id
         return mktime(time_since.timetuple())
     except IndexError:
         return None
@@ -254,7 +265,7 @@ def updatestats():
     #sys.exit()
 
     last_time = get_last_update()
-    print last_time
+    debug_print(last_time)
 
     #items = pocket_instance.get()
     pocket_instance = get_pocket_instance()
@@ -263,7 +274,7 @@ def updatestats():
     else:
         items = pocket_instance.get(count=20, state='all', detailType='complete')
     #print items[0]['status']
-    print 'Number of items in reponse: ' + str(len(items[0]['list']))
+    debug_print('Number of items in reponse: ' + str(len(items[0]['list'])))
     logger.debug('Number of items in response: ' + str(len(items[0]['list'])))
 
     now = datetime.datetime.now()
@@ -355,7 +366,7 @@ def updatestats():
     # Save to DB
     session.commit()
 
-    print report.pretty_print()
+    debug_print(report.pretty_print())
     logger.info(report)
 
     #items = pocket_instance.get(state='unread')
