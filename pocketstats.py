@@ -83,6 +83,7 @@ class Article(Base):
 
     # 0, 1, 2 - 1 if the item is archived - 2 if the item should be deleted
     status = Column(Integer)
+    firstseen_status = Column(Integer)
 
     excerpt = Column(Text)
 
@@ -105,9 +106,9 @@ class Article(Base):
     videos = Column(Text)
 
     # First import of this item
-    time_firstseen = Column(DateTime)
+    firstseen_time = Column(DateTime)
     # time_updated at time of the first import
-    time_firstseen_updated = Column(DateTime)
+    firstseen_time_updated = Column(DateTime)
 
     time_updated = Column(DateTime)
     time_favorited = Column(DateTime)
@@ -319,8 +320,9 @@ def updatestats():
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
         if not existing_item:
-            article.time_firstseen = now
-            article.time_firstseen_updated = unix_to_python(item['time_updated'])
+            article.firstseen_status = item['status']
+            article.firstseen_time = now
+            article.firstseen_time_updated = unix_to_python(item['time_updated'])
         article.time_updated = unix_to_python(item['time_updated'])
         article.time_favorited = unix_to_python(item['time_favorited'])
         article.time_read = unix_to_python(item['time_read'])
