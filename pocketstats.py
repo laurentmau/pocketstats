@@ -14,8 +14,17 @@ from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
-# Can be overridden in settings.py
-DEBUG = False
+try:
+    import settings
+except ImportError:
+    print('Copy settings_example.py to settings.py and set the configuration to your own preferences')
+    sys.exit(1)
+
+# Debugging can be overridden in settings.py
+try:
+    DEBUG = settings.DEBUG
+except AttributeError:
+    DEBUG = False
 
 
 def safe_unicode(obj, *args):
@@ -173,18 +182,8 @@ def get_pocket_instance():
     """
     Connect to Pocket API
     """
-    try:
-        import settings
-    except ImportError:
-        print('Copy settings_example.py to settings.py and set the configuration to your own preferences')
-        sys.exit(1)
-
     consumer_key = settings.consumer_key
     access_token = settings.access_token
-    try:
-        DEBUG = settings.DEBUG
-    except AttributeError:
-        pass
 
     pocket_instance = pocket.Pocket(consumer_key, access_token)
     return pocket_instance
@@ -263,7 +262,11 @@ def updatestats():
     if last_time:
         items = pocket_instance.get(since=last_time, state='all', detailType='complete')
     else:
-        items = pocket_instance.get(count=20, state='all', detailType='complete')
+        if DEBUG:
+            # When debugging, limit to 20 items
+            items = pocket_instance.get(count=20, state='all', detailType='complete')
+        else:
+            items = pocket_instance.get(state='all', detailType='complete')
     debug_print('Number of items in reponse: ' + str(len(items[0]['list'])))
     logger.debug('Number of items in response: ' + str(len(items[0]['list'])))
 
