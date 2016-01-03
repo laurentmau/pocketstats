@@ -197,7 +197,7 @@ def get_existing_item(item_id):
     """
     session = get_db_connection()
     try:
-        return session.query(Article).filter(Article.item_id == item_id)
+        return session.query(Article).filter(Article.item_id == item_id)[0]
     except IndexError:
         return None
 
@@ -260,14 +260,30 @@ def updatestats():
         #print safe_unicode(item['status']) + ' '+ safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + safe_unicode(item['given_title'])
         #print safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated'])
         logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
-        article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+        if not existing_item:
+            article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+        else:
+            article = existing_item
         article.resolved_id = item['resolved_id']
         article.given_url = item['given_url']
         article.resolved_url = item['resolved_url']
         article.given_title = item['given_title']
         article.resolved_title = item['resolved_title']
         article.favorite = item['favorite']
+
+        if existing_item:
+            previous_status = existing_item.status
+        # 0, 1, 2 - 1 if the item is archived - 2 if the item should be deleted
         article.status = item['status']
+        print "article status " + str(article.status)
+        print type(article.status)
+        if article.status == '0' and not existing_item:
+            nr_added += 1
+        elif article.status == '1':
+            nr_read += 1
+        elif article.status == '2':
+            nr_deleted += 1
+
         article.excerpt = item['excerpt']
         article.is_article = item['is_article']
         article.has_image = item['has_image']
@@ -289,6 +305,10 @@ def updatestats():
         article.time_read = unix_to_python(item['time_read'])
         session.add(article)
 
+    report.nr_added = nr_added
+    report.nr_read = nr_read
+    report.nr_favourited = nr_favourited
+    report.nr_deleted = nr_deleted
     session.add(report)
 
     # Check what's pending
@@ -297,6 +317,11 @@ def updatestats():
 
     # Save to DB
     session.commit()
+
+    print nr_added
+    print nr_read
+    print nr_favourited
+    print nr_deleted
 
     #items = pocket_instance.get(state='unread')
     #print items[0]['status']
