@@ -8,6 +8,7 @@ import pocket
 from pocket import Pocket
 import click
 from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import desc
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.reflection import Inspector
@@ -126,6 +127,7 @@ class Article(Base):
     firstseen_time = Column(DateTime)
     # time_updated at time of the first import
     firstseen_time_updated = Column(DateTime)
+    #local_updated = Column(DateTime)
 
     time_updated = Column(DateTime)
     time_favorited = Column(DateTime)
@@ -149,6 +151,8 @@ class Report(Base):
     nr_read = Column(Integer)
     nr_deleted = Column(Integer)
     nr_favourited = Column(Integer)
+    # Has updates according to change in time_updated
+    nr_updated = Column(Integer)
     # Response metadata
     status = Column(Integer)
     complete = Column(Integer)
@@ -158,7 +162,7 @@ class Report(Base):
         """
         Return a pretty overview of the report, usable for printing as import result
         """
-        data = [['update at', datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
+        data = [['update at', datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['updated', str(self.nr_updated)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
         result = ''
         col_width = max(len(word) for row in data for word in row) + 2  # padding
         for row in data:
@@ -167,7 +171,7 @@ class Report(Base):
 
 
     def __str__(self):
-        return u'Update at ' + datetime_to_string(self.time_updated) + '; total in response: ' + str(self.total_response) + ', nr_added: ' + str(self.nr_added) + ', nr_read: ' + str(self.nr_read) + ', nr_favourited: ' + str(self.nr_favourited) + ', nr_deleted: ' + str(self.nr_deleted)
+        return u'Update at ' + datetime_to_string(self.time_updated) + '; total in response: ' + str(self.total_response) + ', nr_updated: ' + str(self.nr_updated) + ', nr_added: ' + str(self.nr_added) + ', nr_read: ' + str(self.nr_read) + ', nr_favourited: ' + str(self.nr_favourited) + ', nr_deleted: ' + str(self.nr_deleted)
 
 
     def __unicode__(self):
@@ -221,7 +225,7 @@ def get_last_update():
     """
     session = get_db_connection()
     try:
-        time_since, report_id = session.query(Report.time_since, Report.id).order_by(Report.time_since)[0]
+        time_since, report_id = session.query(Report.time_since, Report.id).order_by(desc(Report.time_since))[0]
         return mktime(time_since.timetuple())
     except IndexError:
         return None
@@ -276,6 +280,7 @@ def updatestats():
     nr_read = 0
     nr_deleted = 0
     nr_favourited = 0
+    nr_updated = 0
     report.time_since = unix_to_python(items[0]['since'])
     report.status = items[0]['status']
     report.complete = items[0]['complete']
@@ -297,6 +302,8 @@ def updatestats():
         article.resolved_url = item['resolved_url']
         article.given_title = item['given_title']
         article.resolved_title = item['resolved_title']
+        if existing_item and existing_item.favorite == '0' and item['favorite'] == '1':
+            nr_favourited += 1
         article.favorite = item['favorite']
 
         if existing_item:
@@ -329,6 +336,8 @@ def updatestats():
             article.images = json.dumps(item['images'])
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
+        if existing_item and existing_item.time_updated != unix_to_python(item['time_updated']):
+            nr_updated += 1
         article.time_updated = unix_to_python(item['time_updated'])
         article.time_favorited = unix_to_python(item['time_favorited'])
         article.time_read = unix_to_python(item['time_read'])
@@ -344,6 +353,7 @@ def updatestats():
     report.nr_read = nr_read
     report.nr_favourited = nr_favourited
     report.nr_deleted = nr_deleted
+    report.nr_updated = nr_updated
     session.add(report)
 
     # Check what's pending
