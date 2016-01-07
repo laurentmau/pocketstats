@@ -10,6 +10,8 @@ import click
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import desc
 from sqlalchemy import create_engine
+from sqlalchemy import func
+from sqlalchemy import extract
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
@@ -56,7 +58,14 @@ def unix_to_string(timestamp):
 
 
 def unix_to_python(timestamp):
-    return datetime.datetime.utcfromtimestamp(float(timestamp))
+    """
+    Convert unix timestamp to python datetime
+    """
+    # Not sure how correct this is to do here, but return 'null' if the timestamp from Pocket is 0
+    if int(timestamp) == 0:
+        return None
+    else:
+        return datetime.datetime.utcfromtimestamp(float(timestamp))
 
 
 def datetime_to_string(timestamp):
@@ -242,6 +251,15 @@ def get_existing_item(item_id):
         return None
 
 
+def get_count(q):
+    """
+    Fast count for column, avoiding a subquery
+    """
+    count_q = q.statement.with_only_columns([func.count()]).order_by(None)
+    count = q.session.execute(count_q).scalar()
+    return count
+
+
 ## Main program
 @click.group()
 def cli():
@@ -390,6 +408,32 @@ def gettoken(consumer_key):
     print ""
     print auth_url
     print ""
+
+
+@cli.command()
+def showstats():
+    """
+    Show statistics about the collection
+    """
+    session = get_db_connection()
+    #session.query(Article).
+    #items = session.query(extract('year', Article.time_read).label('year')).distinct().subquery()
+    #items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).distinct().order_by('year')
+    items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
+    for item in items:
+        print item
+    return
+
+    items = session.query(extract('year', Article.time_read).label('year')).distinct()
+    for item in items:
+        print item
+
+    per_date = session.query(func.count(Article.id), extract('date', Article.time_read).label('h')).group_by('h')
+    for item in per_date:
+        print item
+    per_hour = session.query(extract('hour', Article.time_read).label('h')).group_by('h')
+    for item in per_hour:
+        print item
 
 
 if not hasattr(main, '__file__'):
