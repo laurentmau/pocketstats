@@ -401,8 +401,15 @@ def gettoken(consumer_key):
     """
     # URL to redirect user to, to authorize your app
     redirect_uri = 'https://github.com/aquatix/pocketstats'
-    request_token = Pocket.get_request_token(consumer_key=consumer_key, redirect_uri=redirect_uri)
-    auth_url = Pocket.get_auth_url(code=request_token, redirect_uri=redirect_uri)
+    try:
+        request_token = Pocket.get_request_token(consumer_key=consumer_key, redirect_uri=redirect_uri)
+        auth_url = Pocket.get_auth_url(code=request_token, redirect_uri=redirect_uri)
+    except pocket.RateLimitException as e:
+        # pocket.RateLimitException: User was authenticated, but access denied due to lack of permission or rate limiting. Invalid consumer key. 
+        print "Failed to get an access token, likely due to an invalid consumer key"
+        print "Go to https://getpocket.com/developer/ and generate a key there"
+        print ""
+        sys.exit(1)
     print "Open the uri printed below in your browser and allow the application"
     print "Note the key you get in response, as that is your access_token"
     print ""
