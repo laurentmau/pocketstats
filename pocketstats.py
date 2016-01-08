@@ -320,7 +320,9 @@ def updatestats():
         article.resolved_url = item['resolved_url']
         article.given_title = item['given_title']
         article.resolved_title = item['resolved_title']
-        if existing_item and existing_item.favorite == '0' and item['favorite'] == '1':
+        if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
+            nr_favourited += 1
+        elif existing_item == None and item['favorite'] == '1':
             nr_favourited += 1
         article.favorite = item['favorite']
 
