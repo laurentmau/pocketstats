@@ -308,23 +308,13 @@ def updatestats():
     for item_id in items[0]['list']:
         item = items[0]['list'][item_id]
         existing_item = get_existing_item(item_id)
-        logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']))
         if not existing_item:
-            article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+            #article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
+            article = Article(item_id=item['item_id'])
             logger.debug('Existing item NOT found for ' + item_id)
         else:
             article = existing_item
             logger.debug('Existing item found for ' + item_id)
-        article.resolved_id = item['resolved_id']
-        article.given_url = item['given_url']
-        article.resolved_url = item['resolved_url']
-        article.given_title = item['given_title']
-        article.resolved_title = item['resolved_title']
-        if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
-            nr_favourited += 1
-        elif existing_item == None and item['favorite'] == '1':
-            nr_favourited += 1
-        article.favorite = item['favorite']
 
         if existing_item:
             previous_status = existing_item.status
@@ -342,6 +332,36 @@ def updatestats():
             nr_deleted += 1
         elif article.status == '2':
             nr_deleted += 1
+
+        #if not existing_item and not 'resolved_id' in item:
+        if not 'resolved_id' in item:
+            # Item was added and immediately deleted, or at least before we saw it
+            logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' deleted')
+
+            article.firstseen_status = item['status']
+            article.firstseen_time = now
+            try:
+                article.firstseen_time_updated = unix_to_python(item['time_updated'])
+            except KeyError:
+                pass
+
+            # If item didn't exist yet, add it (otherwise it's updated automagically)
+            session.add(article)
+            # Skip the rest of the loop
+            continue
+
+        logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']) + ' ' + safe_unicode(item['resolved_url']))
+        article.resolved_id = item['resolved_id']
+        article.sort_id = item['sort_id']
+        article.given_url = item['given_url']
+        article.resolved_url = item['resolved_url']
+        article.given_title = item['given_title']
+        article.resolved_title = item['resolved_title']
+        if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
+            nr_favourited += 1
+        elif existing_item == None and item['favorite'] == '1':
+            nr_favourited += 1
+        article.favorite = item['favorite']
 
         article.excerpt = item['excerpt']
         article.is_article = item['is_article']
@@ -407,7 +427,7 @@ def gettoken(consumer_key):
         request_token = Pocket.get_request_token(consumer_key=consumer_key, redirect_uri=redirect_uri)
         auth_url = Pocket.get_auth_url(code=request_token, redirect_uri=redirect_uri)
     except pocket.RateLimitException as e:
-        # pocket.RateLimitException: User was authenticated, but access denied due to lack of permission or rate limiting. Invalid consumer key. 
+        # pocket.RateLimitException: User was authenticated, but access denied due to lack of permission or rate limiting. Invalid consumer key.
         print "Failed to get an access token, likely due to an invalid consumer key"
         print "Go to https://getpocket.com/developer/ and generate a key there"
         print ""
