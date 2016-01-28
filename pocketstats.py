@@ -166,6 +166,9 @@ class Report(Base):
     status = Column(Integer)
     complete = Column(Integer)
     error = Column(Text)
+    # json summary of the changed articles (added, read, deleted, fav'd, updated)
+    changed_articles = Column(Text)
+
 
     def pretty_print(self):
         """
@@ -278,7 +281,7 @@ def updatestats():
     session = get_db_connection()
 
     last_time = get_last_update()
-    debug_print(last_time)
+    debug_print('Previous update: ' + unix_to_string(last_time))
 
     pocket_instance = get_pocket_instance()
     if last_time:
@@ -299,6 +302,7 @@ def updatestats():
     nr_deleted = 0
     nr_favourited = 0
     nr_updated = 0
+    changed_articles = {'added': [], 'read': [], 'deleted': [], 'favourited': [], 'updated': []}
     report.time_since = unix_to_python(items[0]['since'])
     report.status = items[0]['status']
     report.complete = items[0]['complete']
@@ -320,18 +324,28 @@ def updatestats():
             previous_status = existing_item.status
         # 0, 1, 2 - 1 if the item is archived - 2 if the item should be deleted
         article.status = item['status']
-        if article.status == '0' and not existing_item:
-            nr_added += 1
-        elif article.status == '1' and not existing_item:
-            nr_added += 1
-            nr_read += 1
-        elif article.status == '1':
-            nr_read += 1
-        elif article.status == '2' and not existing_item:
-            nr_added += 1
-            nr_deleted += 1
-        elif article.status == '2':
-            nr_deleted += 1
+        try:
+            if article.status == '0' and not existing_item:
+                nr_added += 1
+                changed_articles['added'].append(item['resolved_id'])
+            elif article.status == '1' and not existing_item:
+                nr_added += 1
+                nr_read += 1
+                changed_articles['added'].append(item['resolved_id'])
+                changed_articles['read'].append(item['resolved_id'])
+            elif article.status == '1':
+                nr_read += 1
+                changed_articles['read'].append(item['resolved_id'])
+            elif article.status == '2' and not existing_item:
+                nr_added += 1
+                nr_deleted += 1
+                changed_articles['added'].append(item['resolved_id'])
+                changed_articles['deleted'].append(item['resolved_id'])
+            elif article.status == '2':
+                nr_deleted += 1
+                changed_articles['deleted'].append(item['resolved_id'])
+        except KeyError:
+            logger.info('No resolved_id found')
 
         #if not existing_item and not 'resolved_id' in item:
         if not 'resolved_id' in item:
@@ -359,8 +373,10 @@ def updatestats():
         article.resolved_title = item['resolved_title']
         if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
             nr_favourited += 1
+            changed_articles['favourited'].append(item['resolved_id'])
         elif existing_item == None and item['favorite'] == '1':
             nr_favourited += 1
+            changed_articles['favourited'].append(item['resolved_id'])
         article.favorite = item['favorite']
 
         article.excerpt = item['excerpt']
@@ -378,6 +394,7 @@ def updatestats():
             article.videos = json.dumps(item['videos'])
         if existing_item and existing_item.time_updated != unix_to_python(item['time_updated']):
             nr_updated += 1
+            changed_articles['updated'].append(item['resolved_id'])
         article.time_updated = unix_to_python(item['time_updated'])
         article.time_favorited = unix_to_python(item['time_favorited'])
         article.time_read = unix_to_python(item['time_read'])
@@ -394,6 +411,8 @@ def updatestats():
     report.nr_favourited = nr_favourited
     report.nr_deleted = nr_deleted
     report.nr_updated = nr_updated
+    report.changed_articles = json.dumps(changed_articles)
+    #debug_print(report.changed_articles)
     session.add(report)
 
     # Check what's pending
