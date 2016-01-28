@@ -142,6 +142,14 @@ class Article(Base):
     time_favorited = Column(DateTime)
     time_read = Column(DateTime)
 
+    def __str__(self):
+        #return u'[' + str(self.item_id) + '] ' + self.resolved_title + ' - ' + self.resolved_url
+        return u'[' + str(self.item_id) + '] ' + str(self.resolved_url)
+
+
+    def __unicode__(self):
+        return self.__str__()
+
 
 class Report(Base):
     """
@@ -179,6 +187,21 @@ class Report(Base):
         col_width = max(len(word) for row in data for word in row) + 2  # padding
         for row in data:
             result += "".join(word.ljust(col_width) for word in row) + "\n"
+        return result
+
+
+    def print_changed_articles(self):
+        """
+        Return a pretty overview of the articles that were added/read/etc
+        """
+        changed_articles = json.loads(self.changed_articles)
+        result = u''
+        for changetype in changed_articles:
+            idlist = changed_articles[changetype]
+            result += u'\n== ' + changetype + ' ======\n'
+            for item_id in idlist:
+                this_item = get_existing_item(item_id)
+                result += u'' + str(this_item) + '\n'
         return result
 
 
@@ -327,23 +350,23 @@ def updatestats():
         try:
             if article.status == '0' and not existing_item:
                 nr_added += 1
-                changed_articles['added'].append(item['resolved_id'])
+                changed_articles['added'].append(item['item_id'])
             elif article.status == '1' and not existing_item:
                 nr_added += 1
                 nr_read += 1
-                changed_articles['added'].append(item['resolved_id'])
-                changed_articles['read'].append(item['resolved_id'])
+                changed_articles['added'].append(item['item_id'])
+                changed_articles['read'].append(item['item_id'])
             elif article.status == '1':
                 nr_read += 1
-                changed_articles['read'].append(item['resolved_id'])
+                changed_articles['read'].append(item['item_id'])
             elif article.status == '2' and not existing_item:
                 nr_added += 1
                 nr_deleted += 1
-                changed_articles['added'].append(item['resolved_id'])
-                changed_articles['deleted'].append(item['resolved_id'])
+                changed_articles['added'].append(item['item_id'])
+                changed_articles['deleted'].append(item['item_id'])
             elif article.status == '2':
                 nr_deleted += 1
-                changed_articles['deleted'].append(item['resolved_id'])
+                changed_articles['deleted'].append(item['item_id'])
         except KeyError:
             logger.info('No resolved_id found')
 
@@ -352,6 +375,7 @@ def updatestats():
             # Item was added and immediately deleted, or at least before we saw it
             logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' deleted')
 
+            article.item_id = item['item_id']
             article.firstseen_status = item['status']
             article.firstseen_time = now
             try:
@@ -373,10 +397,10 @@ def updatestats():
         article.resolved_title = item['resolved_title']
         if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
             nr_favourited += 1
-            changed_articles['favourited'].append(item['resolved_id'])
+            changed_articles['favourited'].append(item['item_id'])
         elif existing_item == None and item['favorite'] == '1':
             nr_favourited += 1
-            changed_articles['favourited'].append(item['resolved_id'])
+            changed_articles['favourited'].append(item['item_id'])
         article.favorite = item['favorite']
 
         article.excerpt = item['excerpt']
@@ -394,7 +418,7 @@ def updatestats():
             article.videos = json.dumps(item['videos'])
         if existing_item and existing_item.time_updated != unix_to_python(item['time_updated']):
             nr_updated += 1
-            changed_articles['updated'].append(item['resolved_id'])
+            changed_articles['updated'].append(item['item_id'])
         article.time_updated = unix_to_python(item['time_updated'])
         article.time_favorited = unix_to_python(item['time_favorited'])
         article.time_read = unix_to_python(item['time_read'])
@@ -423,6 +447,7 @@ def updatestats():
     session.commit()
 
     debug_print(report.pretty_print())
+    debug_print(report.print_changed_articles())
     logger.info(report)
 
 
