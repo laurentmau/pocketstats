@@ -72,6 +72,61 @@ def datetime_to_string(timestamp):
     return timestamp.strftime('%Y-%m-%d %H:%M:%S')
 
 
+def to_smart_columns(data, headers=None, padding=2):
+    """
+    Nicely format the 2-dimensional list into columns
+    """
+    result = ''
+    col_widths = []
+    for row in data:
+        col_counter = 0
+        for word in row:
+            try:
+                col_widths[col_counter] = max(len(word), col_widths[col_counter])
+            except IndexError:
+                col_widths.append(len(word))
+            col_counter += 1
+
+    if headers:
+        col_counter = 0
+        for word in headers:
+            try:
+                col_widths[col_counter] = max(len(word), col_widths[col_counter])
+            except IndexError:
+                col_widths.append(len(word))
+            col_counter += 1
+
+    # Add padding
+    col_widths = [width + padding for width in col_widths]
+    total_width = sum(col_widths)
+
+    if headers:
+        col_counter = 0
+        for word in headers:
+            result += "".join(word.ljust(col_widths[col_counter]))
+            col_counter += 1
+        result += "\n"
+        result += '-' * total_width + "\n"
+
+    for row in data:
+        col_counter = 0
+        for word in row:
+            result += "".join(word.ljust(col_widths[col_counter]))
+            col_counter += 1
+        result += "\n"
+    return result
+
+
+def parselog(state, log):
+    """
+    Parse contents of the `log` list, considering the info already in `state`.
+    Return new version of `state`.
+
+    Format of `state`:
+    {'current_file': 'filename', 'current_line': NN, 'macs': {'<MAC ADDRESS 1>': [{'session_start': '<datetime>', 'session_end': '<datetime>', 'ip': '<ip address>'}, {'session_start'...}], '<MAC ADDRESS 2>': [...]},
+    'timestamp': <latest timestamp>, 'previous_timestamp': <previous timestamp>, 'previous_macs': ['<MAC ADDRESS 2>', '<MAC ADDRESS 4>'], 'current_macs': ['<MAC ADDRESS 2>', '<MAC ADDRESS 3>']}
+    """
+    timezonestring = '+0100'
 def get_logger():
     """
     Create logging handler
@@ -505,6 +560,7 @@ def showstats():
     Show statistics about the collection
     """
     COLUMS = 40
+    result = []
 
     session = get_db_connection()
     #session.query(Article).
@@ -516,23 +572,27 @@ def showstats():
     items_favourited = nr_favourited(session)
     items_deleted = nr_deleted(session)
 
-    print 'Total items: ' + str(items_total)
-    print 'Total read: ' + str(items_read)
-    print 'Total favourited: ' + str(items_favourited)
-    print 'Total deleted: ' + str(items_deleted)
-    print
+    result.append(['Total items', str(items_total)])
+    result.append(['Total read', str(items_read)])
+    result.append(['Total favourited', str(items_favourited)])
+    result.append(['Total deleted', str(items_deleted)])
+    result.append([])
 
     bins_total = int(items_total / COLUMS) + 1
     bins_read = int((float(items_read) / float(items_total)) * bins_total) + 1
-    result = '#' * bins_read
-    result += '.' * (bins_total - bins_read)
-    print result
+    progress = '#' * bins_read
+    progress += '.' * (bins_total - bins_read)
+    result.append(['progress', progress])
     bins_favs = int((float(items_favourited) / float(items_total)) * bins_total) + 1
-    print '*' * bins_favs
+    result.append(['favourites', '*' * bins_favs])
 
+    result.append([])
+    result.append(['year', 'amount of articles read'])
     items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
     for item in items:
-        print item
+        result.append([str(item[0]), str(item[1])])
+
+    print(to_smart_columns(result))
     return
 
     items = session.query(extract('year', Article.time_read).label('year')).distinct()
