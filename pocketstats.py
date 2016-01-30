@@ -286,6 +286,22 @@ def get_count(q):
     return count
 
 
+def nr_total(session):
+    return get_count(session.query(Article.id))
+
+
+def nr_read(session):
+    return get_count(session.query(Article).filter(Article.status == 1))
+
+
+def nr_deleted(session):
+    return get_count(session.query(Article).filter(Article.status == 2))
+
+
+def nr_favourited(session):
+    return get_count(session.query(Article).filter(Article.favorite == 1))
+
+
 ## Main program
 @click.group()
 def cli():
@@ -488,10 +504,32 @@ def showstats():
     """
     Show statistics about the collection
     """
+    COLUMS = 40
+
     session = get_db_connection()
     #session.query(Article).
     #items = session.query(extract('year', Article.time_read).label('year')).distinct().subquery()
     #items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).distinct().order_by('year')
+
+    items_total = nr_total(session)
+    items_read = nr_read(session)
+    items_favourited = nr_favourited(session)
+    items_deleted = nr_deleted(session)
+
+    print 'Total items: ' + str(items_total)
+    print 'Total read: ' + str(items_read)
+    print 'Total favourited: ' + str(items_favourited)
+    print 'Total deleted: ' + str(items_deleted)
+    print
+
+    bins_total = int(items_total / COLUMS) + 1
+    bins_read = int((float(items_read) / float(items_total)) * bins_total) + 1
+    result = '#' * bins_read
+    result += '.' * (bins_total - bins_read)
+    print result
+    bins_favs = int((float(items_favourited) / float(items_total)) * bins_total) + 1
+    print '*' * bins_favs
+
     items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
     for item in items:
         print item
