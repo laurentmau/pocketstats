@@ -117,16 +117,6 @@ def to_smart_columns(data, headers=None, padding=2):
     return result
 
 
-def parselog(state, log):
-    """
-    Parse contents of the `log` list, considering the info already in `state`.
-    Return new version of `state`.
-
-    Format of `state`:
-    {'current_file': 'filename', 'current_line': NN, 'macs': {'<MAC ADDRESS 1>': [{'session_start': '<datetime>', 'session_end': '<datetime>', 'ip': '<ip address>'}, {'session_start'...}], '<MAC ADDRESS 2>': [...]},
-    'timestamp': <latest timestamp>, 'previous_timestamp': <previous timestamp>, 'previous_macs': ['<MAC ADDRESS 2>', '<MAC ADDRESS 4>'], 'current_macs': ['<MAC ADDRESS 2>', '<MAC ADDRESS 3>']}
-    """
-    timezonestring = '+0100'
 def get_logger():
     """
     Create logging handler
