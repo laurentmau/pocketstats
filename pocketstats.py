@@ -187,6 +187,12 @@ class Article(Base):
     time_favorited = Column(DateTime)
     time_read = Column(DateTime)
 
+    def get_tags(self):
+        result = []
+        for tag in json.loads(self.tags):
+            result.append(tag)
+        return result
+
     def __str__(self):
         #return u'[' + str(self.item_id) + '] ' + self.resolved_title + ' - ' + self.resolved_url
         return u'[' + str(self.item_id) + '] ' + str(self.resolved_url)
@@ -549,7 +555,8 @@ def showstats():
     """
     Show statistics about the collection
     """
-    COLUMS = 40
+    # Size of progress-bar
+    COLUMNS = 40
     result = []
 
     session = get_db_connection()
@@ -557,6 +564,7 @@ def showstats():
     #items = session.query(extract('year', Article.time_read).label('year')).distinct().subquery()
     #items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).distinct().order_by('year')
 
+    # Numbers
     items_total = nr_total(session)
     items_read = nr_read(session)
     items_favourited = nr_favourited(session)
@@ -568,7 +576,8 @@ def showstats():
     result.append(['Total deleted', str(items_deleted)])
     result.append([])
 
-    bins_total = int(items_total / COLUMS) + 1
+    # Progress bar
+    bins_total = int(items_total / COLUMNS) + 1
     bins_read = int((float(items_read) / float(items_total)) * bins_total) + 1
     progress = '#' * bins_read
     progress += '.' * (bins_total - bins_read)
@@ -577,11 +586,17 @@ def showstats():
     result.append(['favourites', '*' * bins_favs])
 
     result.append([])
+
+    # Read articles per yer
     result.append(['year', 'amount of articles read'])
     items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
     for item in items:
         result.append([str(item[0]), str(item[1])])
 
+    # Tags
+    # TODO: loop over Articles, get amount of articles/tag
+
+    # Finally, print the stats
     print(to_smart_columns(result))
     return
 
