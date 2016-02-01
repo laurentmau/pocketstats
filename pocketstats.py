@@ -6,7 +6,7 @@ import sys
 import __main__ as main
 import pocket
 from pocket import Pocket
-from utilkit import datetimeutil, stringutil, stringutil
+from utilkit import datetimeutil, printutil, stringutil
 import click
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import desc
