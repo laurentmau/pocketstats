@@ -6,6 +6,7 @@ import sys
 import __main__ as main
 import pocket
 from pocket import Pocket
+from utilkit import datetimeutil, stringutil, stringutil
 import click
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy import desc
@@ -30,91 +31,9 @@ except AttributeError:
     DEBUG = False
 
 
-def safe_unicode(obj, *args):
-    """ return the unicode representation of obj """
-    try:
-        return unicode(obj, *args)
-    except UnicodeDecodeError:
-        # obj is byte string
-        ascii_text = str(obj).encode('string_escape')
-        return unicode(ascii_text)
-
-def safe_str(obj):
-    """ return the byte string representation of obj """
-    try:
-        return str(obj)
-    except UnicodeEncodeError:
-        # obj is unicode
-        return unicode(obj).encode('unicode_escape')
-
-
 def debug_print(string):
     if DEBUG:
         print string
-
-
-def unix_to_string(timestamp):
-    return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-
-
-def unix_to_python(timestamp):
-    """
-    Convert unix timestamp to python datetime
-    """
-    # Not sure how correct this is to do here, but return 'null' if the timestamp from Pocket is 0
-    if int(timestamp) == 0:
-        return None
-    else:
-        return datetime.datetime.utcfromtimestamp(float(timestamp))
-
-
-def datetime_to_string(timestamp):
-    return timestamp.strftime('%Y-%m-%d %H:%M:%S')
-
-
-def to_smart_columns(data, headers=None, padding=2):
-    """
-    Nicely format the 2-dimensional list into columns
-    """
-    result = ''
-    col_widths = []
-    for row in data:
-        col_counter = 0
-        for word in row:
-            try:
-                col_widths[col_counter] = max(len(word), col_widths[col_counter])
-            except IndexError:
-                col_widths.append(len(word))
-            col_counter += 1
-
-    if headers:
-        col_counter = 0
-        for word in headers:
-            try:
-                col_widths[col_counter] = max(len(word), col_widths[col_counter])
-            except IndexError:
-                col_widths.append(len(word))
-            col_counter += 1
-
-    # Add padding
-    col_widths = [width + padding for width in col_widths]
-    total_width = sum(col_widths)
-
-    if headers:
-        col_counter = 0
-        for word in headers:
-            result += "".join(word.ljust(col_widths[col_counter]))
-            col_counter += 1
-        result += "\n"
-        result += '-' * total_width + "\n"
-
-    for row in data:
-        col_counter = 0
-        for word in row:
-            result += "".join(word.ljust(col_widths[col_counter]))
-            col_counter += 1
-        result += "\n"
-    return result
 
 
 def get_logger():
@@ -233,7 +152,7 @@ class Report(Base):
         """
         Return a pretty overview of the report, usable for printing as import result
         """
-        data = [['update at', datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['updated', str(self.nr_updated)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
+        data = [['update at', datetimeutil.datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['updated', str(self.nr_updated)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
         result = ''
         col_width = max(len(word) for row in data for word in row) + 2  # padding
         for row in data:
@@ -257,7 +176,7 @@ class Report(Base):
 
 
     def __str__(self):
-        return u'Update at ' + datetime_to_string(self.time_updated) + '; total in response: ' + str(self.total_response) + ', nr_updated: ' + str(self.nr_updated) + ', nr_added: ' + str(self.nr_added) + ', nr_read: ' + str(self.nr_read) + ', nr_favourited: ' + str(self.nr_favourited) + ', nr_deleted: ' + str(self.nr_deleted)
+        return u'Update at ' + datetimeutil.datetime_to_string(self.time_updated) + '; total in response: ' + str(self.total_response) + ', nr_updated: ' + str(self.nr_updated) + ', nr_added: ' + str(self.nr_added) + ', nr_read: ' + str(self.nr_read) + ', nr_favourited: ' + str(self.nr_favourited) + ', nr_deleted: ' + str(self.nr_deleted)
 
 
     def __unicode__(self):
@@ -371,7 +290,7 @@ def updatestats():
     session = get_db_connection()
 
     last_time = get_last_update()
-    debug_print('Previous update: ' + unix_to_string(last_time))
+    debug_print('Previous update: ' + datetimeutil.unix_to_string(last_time))
 
     pocket_instance = get_pocket_instance()
     if last_time:
@@ -393,7 +312,7 @@ def updatestats():
     nr_favourited = 0
     nr_updated = 0
     changed_articles = {'added': [], 'read': [], 'deleted': [], 'favourited': [], 'updated': []}
-    report.time_since = unix_to_python(items[0]['since'])
+    report.time_since = datetimeutil.unix_to_python(items[0]['since'])
     report.status = items[0]['status']
     report.complete = items[0]['complete']
     report.error = items[0]['error']
@@ -440,13 +359,13 @@ def updatestats():
         #if not existing_item and not 'resolved_id' in item:
         if not 'resolved_id' in item:
             # Item was added and immediately deleted, or at least before we saw it
-            logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' deleted')
+            logger.debug(stringutil.safe_unicode(item['status']) + ' ' + stringutil.safe_unicode(item['item_id']) + ' deleted')
 
             article.item_id = item['item_id']
             article.firstseen_status = item['status']
             article.firstseen_time = now
             try:
-                article.firstseen_time_updated = unix_to_python(item['time_updated'])
+                article.firstseen_time_updated = datetimeutil.unix_to_python(item['time_updated'])
             except KeyError:
                 pass
 
@@ -455,7 +374,7 @@ def updatestats():
             # Skip the rest of the loop
             continue
 
-        logger.debug(safe_unicode(item['status']) + ' ' + safe_unicode(item['item_id']) + ' ' + safe_unicode(item['resolved_id']) + ' ' + unix_to_string(item['time_added']) + ' ' + unix_to_string(item['time_updated']) + ' ' + safe_unicode(item['resolved_url']))
+        logger.debug(stringutil.safe_unicode(item['status']) + ' ' + stringutil.safe_unicode(item['item_id']) + ' ' + stringutil.safe_unicode(item['resolved_id']) + ' ' + datetimeutil.unix_to_string(item['time_added']) + ' ' + datetimeutil.unix_to_string(item['time_updated']) + ' ' + stringutil.safe_unicode(item['resolved_url']))
         article.resolved_id = item['resolved_id']
         article.sort_id = item['sort_id']
         article.given_url = item['given_url']
@@ -483,16 +402,16 @@ def updatestats():
             article.images = json.dumps(item['images'])
         if 'videos' in item:
             article.videos = json.dumps(item['videos'])
-        if existing_item and existing_item.time_updated != unix_to_python(item['time_updated']):
+        if existing_item and existing_item.time_updated != datetimeutil.unix_to_python(item['time_updated']):
             nr_updated += 1
             changed_articles['updated'].append(item['item_id'])
-        article.time_updated = unix_to_python(item['time_updated'])
-        article.time_favorited = unix_to_python(item['time_favorited'])
-        article.time_read = unix_to_python(item['time_read'])
+        article.time_updated = datetimeutil.unix_to_python(item['time_updated'])
+        article.time_favorited = datetimeutil.unix_to_python(item['time_favorited'])
+        article.time_read = datetimeutil.unix_to_python(item['time_read'])
         if not existing_item:
             article.firstseen_status = item['status']
             article.firstseen_time = now
-            article.firstseen_time_updated = unix_to_python(item['time_updated'])
+            article.firstseen_time_updated = datetimeutil.unix_to_python(item['time_updated'])
 
             # If item didn't exist yet, add it (otherwise it's updated automagically)
             session.add(article)
@@ -597,7 +516,7 @@ def showstats():
     # TODO: loop over Articles, get amount of articles/tag
 
     # Finally, print the stats
-    print(to_smart_columns(result))
+    print(printutil.to_smart_columns(result))
     return
 
     items = session.query(extract('year', Article.time_read).label('year')).distinct()
