@@ -496,13 +496,8 @@ def showstats():
     result.append([])
 
     # Progress bar
-    bins_total = int(items_total / COLUMNS) + 1
-    bins_read = int((float(items_read) / float(items_total)) * bins_total) + 1
-    progress = '#' * bins_read
-    progress += '.' * (bins_total - bins_read)
-    result.append(['progress', progress])
-    bins_favs = int((float(items_favourited) / float(items_total)) * bins_total) + 1
-    result.append(['favourites', '*' * bins_favs])
+    result.append(['progress', printutil.progress_bar(items_total, items_read, COLUMNS)])
+    result.append(['favourites', printutil.progress_bar(items_total, items_favourited, COLUMNS, ' ', '*')])
 
     result.append([])
 
