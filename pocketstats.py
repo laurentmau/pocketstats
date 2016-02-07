@@ -512,6 +512,14 @@ def showstats():
         else:
             result.append([str(item[0]), str(item[1])])
 
+    # List of number of items read, per date
+    items_read = session.query(func.date(Article.time_read).label('thedate'), func.count(Article.id)).group_by('thedate')
+    # firstseen_time_updated comes as close to 'time added' as we can get from the Pocket API
+    items_added = session.query(func.date(Article.firstseen_time_updated).label('thedate'), func.count(Article.id)).group_by('thedate')
+    #for item in items_added:
+    #    print item
+    # TODO: plot added-vs-read graph
+
     # Tags
     # TODO: loop over Articles, get amount of articles/tag
 
