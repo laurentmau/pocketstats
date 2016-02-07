@@ -496,7 +496,7 @@ def showstats():
     result.append([])
 
     # Progress bar
-    result.append(['progress', printutil.progress_bar(items_total, items_read, COLUMNS)])
+    result.append(['progress', printutil.progress_bar(items_total, items_read, COLUMNS, '.', '#', True)])
     result.append(['favourites', printutil.progress_bar(items_total, items_favourited, COLUMNS, ' ', '*')])
 
     result.append([])
@@ -505,7 +505,12 @@ def showstats():
     result.append(['year', 'amount of articles read'])
     items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
     for item in items:
-        result.append([str(item[0]), str(item[1])])
+        if item[0] == None:
+            result.append(['unknown', str(item[1])])
+        elif item[0] == 1970:
+            result.append(['unread', str(item[1])])
+        else:
+            result.append([str(item[0]), str(item[1])])
 
     # Tags
     # TODO: loop over Articles, get amount of articles/tag
