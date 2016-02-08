@@ -160,7 +160,7 @@ class Report(Base):
         return result
 
 
-    def print_changed_articles(self):
+    def print_changed_articles(self, session):
         """
         Return a pretty overview of the articles that were added/read/etc
         """
@@ -170,7 +170,7 @@ class Report(Base):
             idlist = changed_articles[changetype]
             result += u'\n== ' + changetype + ' ======\n'
             for item_id in idlist:
-                this_item = get_existing_item(item_id)
+                this_item = get_existing_item(session, item_id)
                 result += u'' + str(this_item) + '\n'
         return result
 
@@ -236,11 +236,10 @@ def get_last_update():
         return None
 
 
-def get_existing_item(item_id):
+def get_existing_item(session, item_id):
     """
     Returns the item with item_id if already in DB, otherwise None
     """
-    session = get_db_connection()
     try:
         return session.query(Article).filter(Article.item_id == item_id)[0]
     except IndexError:
@@ -320,7 +319,7 @@ def updatestats():
 
     for item_id in items[0]['list']:
         item = items[0]['list'][item_id]
-        existing_item = get_existing_item(item_id)
+        existing_item = get_existing_item(session, item_id)
         if not existing_item:
             #article = Article(sort_id=item['sort_id'], item_id=item['item_id'])
             article = Article(item_id=item['item_id'])
@@ -433,7 +432,7 @@ def updatestats():
     session.commit()
 
     debug_print(report.pretty_print())
-    debug_print(report.print_changed_articles())
+    debug_print(report.print_changed_articles(session))
     logger.info(report)
 
 
