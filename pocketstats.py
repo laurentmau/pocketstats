@@ -148,11 +148,16 @@ class Report(Base):
     changed_articles = Column(Text)
 
 
+    @property
+    def net_result(self):
+        return self.nr_added - self.nr_read - self.nr_deleted
+
+
     def pretty_print(self):
         """
         Return a pretty overview of the report, usable for printing as import result
         """
-        data = [['update at', datetimeutil.datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['updated', str(self.nr_updated)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)]]
+        data = [['update at', datetimeutil.datetime_to_string(self.time_updated)], ['total in response', str(self.total_response)], ['updated', str(self.nr_updated)], ['added', str(self.nr_added)], ['read', str(self.nr_read)], ['favourited', str(self.nr_favourited)], ['deleted', str(self.nr_deleted)], ['net result', str(self.net_result)]]
         result = ''
         col_width = max(len(word) for row in data for word in row) + 2  # padding
         for row in data:
@@ -259,6 +264,10 @@ def nr_total(session):
     return get_count(session.query(Article.id))
 
 
+def nr_unread(session):
+    return get_count(session.query(Article).filter(Article.status == 0))
+
+
 def nr_read(session):
     return get_count(session.query(Article).filter(Article.status == 1))
 
@@ -271,26 +280,10 @@ def nr_favourited(session):
     return get_count(session.query(Article).filter(Article.favorite == 1))
 
 
-## Main program
-@click.group()
-def cli():
-    """
-    Pocket stats
-    """
-    pass
-
-
-@cli.command()
-def updatestats():
+def updatestats_since_last(logger, session, last_time):
     """
     Get the changes since last time from the Pocket API
     """
-    logger = get_logger()
-    session = get_db_connection()
-
-    last_time = get_last_update()
-    debug_print('Previous update: ' + datetimeutil.unix_to_string(last_time))
-
     pocket_instance = get_pocket_instance()
     if last_time:
         items = pocket_instance.get(since=last_time, state='all', detailType='complete')
@@ -431,7 +424,46 @@ def updatestats():
     # Save to DB
     session.commit()
 
+    return report
+
+
+## Main program
+@click.group()
+def cli():
+    """
+    Pocket stats
+    """
+    pass
+
+
+@cli.command()
+def updatestats():
+    """
+    Get the changes since last time from the Pocket API
+    """
+    logger = get_logger()
+    session = get_db_connection()
+
+    last_time = get_last_update()
+    print datetimeutil.unix_to_python(last_time)
+    debug_print('Previous update: ' + datetimeutil.unix_to_string(last_time))
+
+    previously_unread = nr_unread(session)
+
+    report = updatestats_since_last(logger, session, last_time)
+
     debug_print(report.pretty_print())
+
+    if report.net_result > 0:
+        debug_print('More items added than read or deleted')
+    elif report.net_result == 0:
+        debug_print('Stagnating')
+    else:
+        # Calculate number of days it will take to finish the backlog at this rate
+        #timedelta
+        #days = last_time
+        pass
+
     debug_print(report.print_changed_articles(session))
     logger.info(report)
 
@@ -485,11 +517,13 @@ def showstats():
     # Numbers
     items_total = nr_total(session)
     items_read = nr_read(session)
+    items_unread = nr_unread(session)
     items_favourited = nr_favourited(session)
     items_deleted = nr_deleted(session)
 
     result.append(['Total items', str(items_total)])
     result.append(['Total read', str(items_read)])
+    result.append(['Total unread', str(items_unread)])
     result.append(['Total favourited', str(items_favourited)])
     result.append(['Total deleted', str(items_deleted)])
     result.append([])
