@@ -132,6 +132,7 @@ class Report(Base):
     time_updated = Column(DateTime)
     # DateTime stamp that Pocket reported for this request
     time_since = Column(DateTime)
+    time_since_unix = Column(Integer)
     # Stats
     total_response = Column(Integer)
     nr_added = Column(Integer)
@@ -235,8 +236,9 @@ def get_last_update():
     """
     session = get_db_connection()
     try:
-        time_since, report_id = session.query(Report.time_since, Report.id).order_by(desc(Report.time_since))[0]
-        return mktime(time_since.timetuple())
+        time_since_unix, report_id = session.query(Report.time_since_unix, Report.id).order_by(desc(Report.time_since))[0]
+        #return mktime(time_since.timetuple())
+        return time_since_unix
     except IndexError:
         return None
 
@@ -305,6 +307,7 @@ def updatestats_since_last(logger, session, last_time):
     nr_updated = 0
     changed_articles = {'added': [], 'read': [], 'deleted': [], 'favourited': [], 'updated': []}
     report.time_since = datetimeutil.unix_to_python(items[0]['since'])
+    report.time_since_unix = items[0]['since']
     report.status = items[0]['status']
     report.complete = items[0]['complete']
     report.error = items[0]['error']
