@@ -549,6 +549,7 @@ def showstats():
             result.append([str(item[0]), str(item[1])])
 
     result.append([])
+    print(printutil.to_smart_columns(result))
 
     # List of number of items read, per date
     items_read = session.query(func.date(Article.time_read).label('thedate'), func.count(Article.id)).group_by('thedate')
@@ -559,15 +560,16 @@ def showstats():
     # TODO: plot added-vs-read graph
     items_added_per_month = session.query(extract('year', Article.firstseen_time_updated).label('year'), extract('month', Article.firstseen_time_updated).label('month'), func.count(Article.id)).group_by('year', 'month')
     items_read_per_month = session.query(extract('year', Article.time_read).label('year'), extract('month', Article.time_read).label('month'), func.count(Article.id)).group_by('year', 'month')
-    read_vs_added = printutil.x_vs_y(items_read_per_month, items_added_per_month)
-    for item in read_vs_added:
-        result.append(item)
+    read_vs_added = printutil.x_vs_y(items_read_per_month, items_added_per_month, filter_none=True)
+    #for item in read_vs_added:
+    #    result.append(item)
+    print read_vs_added
 
     # Tags
     # TODO: loop over Articles, get amount of articles/tag
 
     # Finally, print the stats
-    print(printutil.to_smart_columns(result))
+    #print(printutil.to_smart_columns(result))
     return
 
     items = session.query(extract('year', Article.time_read).label('year')).distinct()
