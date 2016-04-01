@@ -55,3 +55,11 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# vim, ctags
+tags
+*.swp
+
+# pocketstats specific
+pocketstats.db*
+settings.py
