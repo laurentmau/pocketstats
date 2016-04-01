@@ -162,7 +162,7 @@ class Report(Base):
         result = ''
         col_width = max(len(word) for row in data for word in row) + 2  # padding
         for row in data:
-            result += "".join(word.ljust(col_width) for word in row) + "\n"
+            result += u''.join(word.ljust(col_width) for word in row) + '\n'
         return result
 
 
@@ -465,7 +465,7 @@ def updatestats():
         # Calculate number of days it will take to finish the backlog at this rate
         #timedelta
         #days = last_time
-        pass
+        debug_print('Slowly but surely reading away your backlog')
 
     debug_print(report.print_changed_articles(session))
     logger.info(report)
