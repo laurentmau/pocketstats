@@ -282,6 +282,13 @@ def nr_favourited(session):
     return get_count(session.query(Article).filter(Article.favorite == 1))
 
 
+def get_read_progressbar(session):
+    COLUMNS = 40
+    items_total = nr_total(session)
+    items_read = nr_read(session)
+    return str(items_read) + '/' + str(items_total) + '  ' + printutil.progress_bar(items_total, items_read, COLUMNS, '.', '#', True)
+
+
 def updatestats_since_last(logger, session, last_time):
     """
     Get the changes since last time from the Pocket API
@@ -467,6 +474,8 @@ def updatestats():
         #days = last_time
         debug_print('Slowly but surely reading away your backlog')
 
+    debug_print(get_read_progressbar(session))
+
     debug_print(report.print_changed_articles(session))
     logger.info(report)
 
@@ -582,6 +591,12 @@ def showstats():
     per_hour = session.query(extract('hour', Article.time_read).label('h')).group_by('h')
     for item in per_hour:
         print item
+
+
+@cli.command()
+def showprogressbar():
+    session = get_db_connection()
+    print get_read_progressbar(session)
 
 
 if not hasattr(main, '__file__'):
