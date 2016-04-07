@@ -253,6 +253,14 @@ def get_existing_item(session, item_id):
         return None
 
 
+def get_random_unread(session, number=5):
+    """
+    Get a (small) list of random items that have not been read yet
+    """
+    #select.order_by(func.random()).limit(number)
+    return session.query(Article.resolved_title, Article.resolved_url, Article.firstseen_time_updated).filter(Article.status == 0).order_by(func.random()).limit(number)[0:number]
+
+
 def get_count(q):
     """
     Fast count for column, avoiding a subquery
@@ -597,6 +605,20 @@ def showstats():
 def showprogressbar():
     session = get_db_connection()
     print get_read_progressbar(session)
+
+
+@cli.command()
+def showreadlist():
+    """
+    List some unread items
+    """
+    session = get_db_connection()
+    items = get_random_unread(session)
+    for item in items:
+        print item[0]
+        print '(in list since ' + datetimeutil.datetime_to_string(item[2]) + ')'
+        print item[1]
+        print
 
 
 if not hasattr(main, '__file__'):
