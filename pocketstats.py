@@ -463,7 +463,6 @@ def updatestats():
     session = get_db_connection()
 
     last_time = get_last_update()
-    print datetimeutil.unix_to_python(last_time)
     debug_print('Previous update: ' + datetimeutil.unix_to_string(last_time))
 
     previously_unread = nr_unread(session)
@@ -482,7 +481,7 @@ def updatestats():
         #days = last_time
         debug_print('Slowly but surely reading away your backlog')
 
-    debug_print(get_read_progressbar(session))
+    debug_print('\n' + get_read_progressbar(session))
 
     debug_print(report.print_changed_articles(session))
     logger.info(report)
