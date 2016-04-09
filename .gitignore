@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
@@ -42,6 +43,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+.hypothesis/
 
 # Translations
 *.mo
@@ -56,9 +58,18 @@ docs/_build/
 # PyBuilder
 target/
 
-# vim, ctags
-tags
+# Ipython Notebook
+.ipynb_checkpoints
+
+# Various Python project related
+local_settings.py
+
+# vim
 *.swp
+
+# ctags
+tags
+TAGS
 
 # pocketstats specific
 pocketstats.db*
