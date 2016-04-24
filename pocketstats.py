@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import func
 from sqlalchemy import extract
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.engine.reflection import Inspector
+#from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
@@ -213,7 +213,7 @@ def get_db_connection(get_engine=False):
     engine = create_engine('sqlite:///pocketstats.db')
     Session = sessionmaker(bind=engine)
     if get_engine:
-        return Session(),engine
+        return Session(), engine
     else:
         return Session()
 
@@ -221,10 +221,10 @@ def get_db_connection(get_engine=False):
 def _create_tables():
     session, engine = get_db_connection(get_engine=True)
 
-    inspector = Inspector.from_engine(engine)
+    #inspector = Inspector.from_engine(engine)
     #for table_name in inspector.get_table_names():
     #    print table_name
-    if (engine.dialect.has_table(engine.connect(), "Article") == False) or (engine.dialect.has_table(engine.connect(), "Report") == False):
+    if (not engine.dialect.has_table(engine.connect(), "Article")) or (not engine.dialect.has_table(engine.connect(), "Report")):
         # TODO: If Article and Report don't exist yet, create:
         Base.metadata.create_all(engine)
 
@@ -367,7 +367,7 @@ def updatestats_since_last(logger, session, last_time):
             logger.info('No resolved_id found')
 
         #if not existing_item and not 'resolved_id' in item:
-        if not 'resolved_id' in item:
+        if 'resolved_id' not in item:
             # Item was added and immediately deleted, or at least before we saw it
             logger.debug(stringutil.safe_unicode(item['status']) + ' ' + stringutil.safe_unicode(item['item_id']) + ' deleted')
 
@@ -394,7 +394,7 @@ def updatestats_since_last(logger, session, last_time):
         if existing_item and existing_item.favorite == 0 and item['favorite'] == '1':
             nr_favourited += 1
             changed_articles['favourited'].append(item['item_id'])
-        elif existing_item == None and item['favorite'] == '1':
+        elif not existing_item and item['favorite'] == '1':
             nr_favourited += 1
             changed_articles['favourited'].append(item['item_id'])
         article.favorite = item['favorite']
@@ -510,6 +510,9 @@ def gettoken(consumer_key):
         # pocket.RateLimitException: User was authenticated, but access denied due to lack of permission or rate limiting. Invalid consumer key.
         print "Failed to get an access token, likely due to an invalid consumer key"
         print "Go to https://getpocket.com/developer/ and generate a key there"
+        print
+        print "Error was:"
+        print e
         print ""
         sys.exit(1)
     print "Open the uri printed below in your browser and allow the application"
@@ -557,7 +560,7 @@ def showstats():
     result.append(['year', 'amount of articles read'])
     items = session.query(extract('year', Article.time_read).label('year'), func.count(Article.id)).group_by('year')
     for item in items:
-        if item[0] == None:
+        if item[0] is None:
             result.append(['unknown', str(item[1])])
         elif item[0] == 1970:
             result.append(['unread', str(item[1])])
