@@ -33,7 +33,7 @@ except AttributeError:
 
 def debug_print(string):
     if DEBUG:
-        print string
+        print(string)
 
 
 def get_logger():
@@ -508,18 +508,18 @@ def gettoken(consumer_key):
         auth_url = Pocket.get_auth_url(code=request_token, redirect_uri=redirect_uri)
     except pocket.RateLimitException as e:
         # pocket.RateLimitException: User was authenticated, but access denied due to lack of permission or rate limiting. Invalid consumer key.
-        print "Failed to get an access token, likely due to an invalid consumer key"
-        print "Go to https://getpocket.com/developer/ and generate a key there"
-        print
-        print "Error was:"
-        print e
-        print ""
+        print("Failed to get an access token, likely due to an invalid consumer key")
+        print("Go to https://getpocket.com/developer/ and generate a key there")
+        print()
+        print("Error was:")
+        print(e)
+        print("")
         sys.exit(1)
-    print "Open the uri printed below in your browser and allow the application"
-    print "Note the key you get in response, as that is your access_token"
-    print ""
-    print auth_url
-    print ""
+    print("Open the uri printed below in your browser and allow the application")
+    print("Note the key you get in response, as that is your access_token")
+    print("")
+    print(auth_url)
+    print("")
 
 
 @cli.command()
@@ -582,7 +582,7 @@ def showstats():
     read_vs_added = printutil.x_vs_y(items_read_per_month, items_added_per_month, filter_none=True)
     #for item in read_vs_added:
     #    result.append(item)
-    print read_vs_added
+    print(read_vs_added)
 
     # Tags
     # TODO: loop over Articles, get amount of articles/tag
@@ -593,20 +593,20 @@ def showstats():
 
     items = session.query(extract('year', Article.time_read).label('year')).distinct()
     for item in items:
-        print item
+        print(item)
 
     per_date = session.query(func.count(Article.id), extract('date', Article.time_read).label('h')).group_by('h')
     for item in per_date:
-        print item
+        print(item)
     per_hour = session.query(extract('hour', Article.time_read).label('h')).group_by('h')
     for item in per_hour:
-        print item
+        print(item)
 
 
 @cli.command()
 def showprogressbar():
     session = get_db_connection()
-    print get_read_progressbar(session)
+    print(get_read_progressbar(session))
 
 
 @cli.command()
@@ -617,10 +617,10 @@ def showreadlist():
     session = get_db_connection()
     items = get_random_unread(session)
     for item in items:
-        print item[0]
-        print '(in list since ' + datetimeutil.datetime_to_string(item[2]) + ')'
-        print item[1]
-        print
+        print(item[0])
+        print('(in list since ' + datetimeutil.datetime_to_string(item[2]) + ')')
+        print(item[1])
+        print()
 
 
 if not hasattr(main, '__file__'):
