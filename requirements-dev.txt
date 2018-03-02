@@ -20,5 +20,5 @@ requests==2.18.4
 six==1.11.0               # via astroid, pylint
 sqlalchemy==1.2.4
 urllib3==1.22             # via requests
-utilkit==0.4.0
+utilkit==0.4.1
 wrapt==1.10.11            # via astroid

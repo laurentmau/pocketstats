@@ -14,4 +14,4 @@ pytz==2018.3              # via utilkit
 requests==2.18.4
 sqlalchemy==1.2.4
 urllib3==1.22             # via requests
-utilkit==0.4.0
+utilkit==0.4.1
