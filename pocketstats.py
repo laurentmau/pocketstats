@@ -481,6 +481,12 @@ def updatestats():
         #days = last_time
         debug_print('Slowly but surely reading away your backlog')
 
+        last_datetime = datetimeutil.unix_to_python(last_time)
+        days = datetime.datetime.now() - last_datetime
+        hours = days.seconds//3600
+        items_per_hour = float(report.net_result) / float(hours)
+        debug_print('\nAt this rate it takes ' + str(nr_unread(session) / (items_per_hour * 24.0)) + ' days to read the remaining items')
+
     debug_print('\n' + get_read_progressbar(session))
 
     debug_print(report.print_changed_articles(session))
