@@ -485,7 +485,8 @@ def updatestats():
         days = datetime.datetime.now() - last_datetime
         hours = days.seconds//3600
         items_per_hour = float(report.net_result) / float(hours)
-        debug_print('\nAt this rate it takes ' + str(nr_unread(session) / (items_per_hour * 24.0)) + ' days to read the remaining items')
+        total_unread = nr_unread(session)
+        debug_print('\nAt this rate it takes ' + str(round(float(total_unread) / (items_per_hour * 24.0), 1)) + ' days to read the ' + str(total_unread) + ' remaining items')
 
     debug_print('\n' + get_read_progressbar(session))
 
