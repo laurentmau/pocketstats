@@ -1,0 +1,5 @@
+SQLAlchemy
+click
+pocket
+requests
+utilkit>=0.2.0
