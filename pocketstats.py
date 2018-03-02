@@ -1,21 +1,21 @@
 import datetime
-from time import mktime
 import json
 import logging
 import sys
-import __main__ as main
+from time import mktime
+
+import click
 import pocket
 from pocket import Pocket
-from utilkit import datetimeutil, printutil, stringutil
-import click
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from sqlalchemy import desc
-from sqlalchemy import create_engine
-from sqlalchemy import func
-from sqlalchemy import extract
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import (Column, DateTime, Integer, String, Text, create_engine,
+                        desc, extract, func)
 #from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from utilkit import datetimeutil, printutil, stringutil
+
+import __main__ as main
+
 Base = declarative_base()
 
 try:
