@@ -633,13 +633,9 @@ def showreadlist():
 
 
 if not hasattr(main, '__file__'):
-    """
-    Running in interactive mode in the Python shell
-    """
+    # Running in interactive mode in the Python shell
     print("Pocket stats running interactively in Python shell")
 
 elif __name__ == '__main__':
-    """
-    Pocket stats is ran standalone, rock and roll
-    """
+    # Pocket stats is ran standalone, rock and roll
     cli()
